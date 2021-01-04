@@ -1,6 +1,12 @@
 import React, { Component, useEffect, useState } from 'react'
-import {View, Text, StyleSheet} from 'react-native'
+import { StatusBar } from 'expo-status-bar'
+import {View, Text, StyleSheet, ActivityIndicator} from 'react-native'
 import * as Location from 'expo-location';
+import WeatherInfo from './../Component/WeatherInfo'
+import UnitsPicker from './../Component/unitPicker'
+import ReloadIcon from './../Component/ReloadIcon'
+import WeatherDetails from './../Component/WeatherDetails'
+import { colors } from './../utils/index'
 
 
 
@@ -12,6 +18,7 @@ function Main() {
 
     const [errorMessage, setErrorMessage] = useState(null);
     const [currentWeather, setCurrentWeather] = useState(null);
+    const [unitSystem,setUnitSystem] = useState('imperial');
 
     const load = async ()=>{
             try{
@@ -24,7 +31,7 @@ function Main() {
                 const location = await Location.getCurrentPositionAsync();
                 const {latitude, longitude} = location.coords;
 
-                const weatherURL = `${BASE_URL}lat=${latitude}&lon=${longitude}&appid=${API_KEY}`;
+                const weatherURL = `${BASE_URL}lat=${latitude}&lon=${longitude}&units=${unitSystem}&appid=${API_KEY}`;
 
                 const response = await fetch(weatherURL)
 
@@ -37,7 +44,7 @@ function Main() {
                 }
 
             }catch(error){
-                console.log(error);
+                setErrorMessage(error.message);
             }
     }
 
@@ -45,19 +52,31 @@ function Main() {
         load()
     },[]);
 
-    if(currentWeather){
-        const {
-            main: {temp}
-        } = currentWeather
+    if (currentWeather) {
         return (
             <View style={styles.container}>
-                <Text>{temp}</Text>
+                <StatusBar style="auto" />
+                <View style={styles.main}>
+                    <UnitsPicker unitsSystem={unitSystem} setUnitsSystem={setUnitSystem} />
+                    <ReloadIcon load={load} />
+                    <WeatherInfo currentWeather={currentWeather} />
+                </View>
+                <WeatherDetails currentWeather={currentWeather} unitsSystem={unitSystem} />
             </View>
         )
-    }else{
+    } else if (errorMessage) {
         return (
             <View style={styles.container}>
-                <Text>{errorMessage}</Text>
+                <ReloadIcon load={load} />
+                <Text style={{ textAlign: 'center' }}>{errorMessage}</Text>
+                <StatusBar style="auto" />
+            </View>
+        )
+    } else {
+        return (
+            <View style={styles.container}>
+                <ActivityIndicator size="large" color={colors.PRIMARY_COLOR} />
+                <StatusBar style="auto" />
             </View>
         )
     }
@@ -68,8 +87,11 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: 'center',
-        alignItems: 'center'
-    }
+    },
+    main: {
+        justifyContent: 'center',
+        flex: 1,
+    },
 })
 
 
